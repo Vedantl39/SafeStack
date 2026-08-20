@@ -1,0 +1,11 @@
+model_name,department,model_owner,purpose,use_case_type,input_data,risk_tier,legal_notes
+Credit Risk Scorer,Risk Management,John Smith,AI model that assesses creditworthiness of loan applicants,Credit scoring and loan approval,Financial history and income data,Medium,GDPR compliance required for personal data processing
+Fraud Detection System,Security,Jane Doe,Real-time transaction monitoring for fraudulent activities,Fraud detection and prevention,Transaction data and behavioral patterns,High,Automated decision-making requires human oversight
+Customer Chatbot,Customer Service,Mike Johnson,AI-powered customer support and query resolution,Customer service automation,Customer messages and conversation history,Low,Standard data processing with consent
+Facial Recognition System,Security,Sarah Wilson,Biometric identification for building access,Security and access control,Facial biometric data,High,Requires explicit consent for biometric processing
+Document Classifier,Operations,Tom Brown,Automated document categorization and processing,Document processing automation,Document content and metadata,Low,Regular document processing workflow
+KYC Verification Bot,Compliance,Lisa Davis,Automated Know Your Customer verification,Identity verification and compliance,Personal identification documents,High,Regulated process requiring human review
+Loan Approval AI,Lending,Robert Taylor,Automated loan approval decision making,Loan processing automation,Credit scores and financial data,Medium,Requires transparency in decision-making process
+Sentiment Analysis Tool,Marketing,Emily Chen,Customer feedback and social media sentiment analysis,Marketing analytics and insights,Customer reviews and social media posts,Low,Anonymized data processing preferred
+Risk Assessment Engine,Risk Management,David Wilson,Portfolio risk evaluation and management,Investment risk analysis,Financial market data and portfolio information,Medium,Requires regular model validation
+Recommendation Engine,Product,Alex Garcia,Personalized product recommendations for customers,Product recommendation system,User behavior and purchase history,Low,Consent-based personalization features

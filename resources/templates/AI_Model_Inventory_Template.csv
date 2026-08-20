@@ -1,0 +1,2 @@
+Model Name,Department,Model Owner,Purpose,Use Case Type,Input Data,Risk Tier,Last Updated,AI Act Status,Legal Notes
+Credit Risk Scorer,Risk Management,Jane Doe,Evaluates creditworthiness of loan applicants using ML algorithms,Loan Decisioning,Financial history credit reports transaction data,High,2025-08-03,,DPIA complete GDPR reviewed
