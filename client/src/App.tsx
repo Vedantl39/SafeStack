@@ -22,6 +22,9 @@ import ComplianceRoadmap from "@/pages/modules/compliance-roadmap";
 import GDPRRiskAssessment from "@/pages/modules/gdpr-risk-assessment";
 import DocumentRiskAnalyzer from "@/pages/modules/document-risk-analyzer";
 import ResourceBank from "@/pages/resource-bank";
+import GovernanceReportBuilder from "@/pages/modules/governance-report";
+import GovernanceReportView from "@/pages/modules/governance-report-view";
+import Training from "@/pages/training";
 
 function AppRouter() {
   return (
@@ -39,6 +42,9 @@ function AppRouter() {
       <Route path="/modules/gdpr-risk-assessment" component={GDPRRiskAssessment} />
       <Route path="/modules/document-risk-analyzer" component={DocumentRiskAnalyzer} />
       <Route path="/resources" component={ResourceBank} />
+      <Route path="/modules/governance-report/view" component={GovernanceReportView} />
+      <Route path="/modules/governance-report" component={GovernanceReportBuilder} />
+      <Route path="/training/:code" component={Training} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -49,7 +55,9 @@ function AppWithChat() {
   const { contextData } = useChatContext();
   
   // Don't show chat widget on landing, login, or register pages
-  const showChatWidget = !['/', '/login', '/register'].includes(location);
+  const showChatWidget =
+    !['/', '/login', '/register', '/modules/governance-report/view'].includes(location) &&
+    !location.startsWith('/training/');
 
   return (
     <>

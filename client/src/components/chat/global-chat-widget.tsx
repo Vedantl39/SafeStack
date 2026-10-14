@@ -30,7 +30,7 @@ interface GlobalChatWidgetProps {
 
 export function GlobalChatWidget({ contextData, onClose }: GlobalChatWidgetProps) {
   const [location] = useLocation();
-  const [isOpen, setIsOpen] = useState(true); // Always visible by default
+  const [isOpen, setIsOpen] = useState(false); // Starts as a launcher button so it never covers forms
   const [isMinimized, setIsMinimized] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
@@ -167,6 +167,7 @@ ${contextData?.pageData ? `Page data context: ${JSON.stringify(contextData.pageD
       >
         <Button
           onClick={() => setIsOpen(true)}
+          aria-label="Open SafeBot, the AI assistant"
           className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
           size="lg"
         >
@@ -187,7 +188,10 @@ ${contextData?.pageData ? `Page data context: ${JSON.stringify(contextData.pageD
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Bot className="h-5 w-5 text-primary" />
-            SafeBot Assistant
+            <span>
+              SafeBot Assistant
+              <span className="block text-xs font-normal text-slate-500">You're chatting with an AI. Answers may be wrong; check important points.</span>
+            </span>
           </CardTitle>
           <div className="flex gap-1">
             <Button

@@ -20,6 +20,7 @@ export function Header() {
   const navigation = [
     { name: "Model Classification", href: "/modules/gdpr-risk-assessment" },
     { name: "Document Analyzer", href: "/modules/document-risk-analyzer" },
+    { name: "Governance Report", href: "/modules/governance-report" },
     { name: "Dashboard", href: "/dashboard" },
     { name: "Resources", href: "/resources" },
     { name: "About", href: "/about" },

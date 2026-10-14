@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { 
   users, 
   riskAssessments,
@@ -6,6 +7,10 @@ import {
   biasChecklists,
   explainabilityPlans,
   complianceRoadmaps,
+  governanceReports,
+  type GovernanceReport,
+  trainingCompletions,
+  type TrainingCompletion,
   templateDownloads,
   aiModelClassifications,
   documentAnalyses,
@@ -75,6 +80,12 @@ export interface IStorage {
   // Compliance roadmaps
   upsertComplianceRoadmap(roadmap: InsertComplianceRoadmap): Promise<ComplianceRoadmap>;
   getComplianceRoadmapByUserId(userId: number): Promise<ComplianceRoadmap | undefined>;
+  getGovernanceReport(userId: number): Promise<GovernanceReport | undefined>;
+  saveGovernanceReport(userId: number, data: { company: unknown; controls: unknown; systems: unknown }): Promise<GovernanceReport>;
+  ensureTrainingCode(userId: number): Promise<string>;
+  getReportByTrainingCode(code: string): Promise<GovernanceReport | undefined>;
+  addTrainingCompletion(data: { ownerUserId: number; name: string; role: string; score: number; total: number; version: string }): Promise<TrainingCompletion>;
+  getTrainingCompletions(ownerUserId: number): Promise<TrainingCompletion[]>;
   
   // Template downloads
   createTemplateDownload(download: InsertTemplateDownload): Promise<TemplateDownload>;
@@ -290,6 +301,55 @@ export class DatabaseStorage implements IStorage {
       .from(complianceRoadmaps)
       .where(eq(complianceRoadmaps.userId, userId));
     return result || undefined;
+  }
+
+  async getGovernanceReport(userId: number): Promise<GovernanceReport | undefined> {
+    const [result] = await db
+      .select()
+      .from(governanceReports)
+      .where(eq(governanceReports.userId, userId));
+    return result || undefined;
+  }
+
+  async saveGovernanceReport(
+    userId: number,
+    data: { company: unknown; controls: unknown; systems: unknown },
+  ): Promise<GovernanceReport> {
+    const [result] = await db
+      .insert(governanceReports)
+      .values({ userId, ...data })
+      .onConflictDoUpdate({
+        target: governanceReports.userId,
+        set: { ...data, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async ensureTrainingCode(userId: number): Promise<string> {
+    const existing = await this.getGovernanceReport(userId);
+    if (existing?.trainingCode) return existing.trainingCode;
+    const code = randomBytes(9).toString("base64url");
+    if (existing) {
+      await db.update(governanceReports).set({ trainingCode: code }).where(eq(governanceReports.userId, userId));
+    } else {
+      await db.insert(governanceReports).values({ userId, company: {}, controls: {}, systems: [], trainingCode: code });
+    }
+    return code;
+  }
+
+  async getReportByTrainingCode(code: string): Promise<GovernanceReport | undefined> {
+    const [result] = await db.select().from(governanceReports).where(eq(governanceReports.trainingCode, code));
+    return result || undefined;
+  }
+
+  async addTrainingCompletion(data: { ownerUserId: number; name: string; role: string; score: number; total: number; version: string }): Promise<TrainingCompletion> {
+    const [result] = await db.insert(trainingCompletions).values(data).returning();
+    return result;
+  }
+
+  async getTrainingCompletions(ownerUserId: number): Promise<TrainingCompletion[]> {
+    return db.select().from(trainingCompletions).where(eq(trainingCompletions.ownerUserId, ownerUserId)).orderBy(desc(trainingCompletions.completedAt));
   }
 
   async createTemplateDownload(download: InsertTemplateDownload): Promise<TemplateDownload> {
