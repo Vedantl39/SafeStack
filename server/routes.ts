@@ -24,6 +24,9 @@ import {
   type ClientDataInput
 } from "@shared/schema";
 import { classifyAiModel, detectRisksFromText } from "./ai-model-classifier";
+import { askClaude, extractJson } from "./claude";
+import { z } from "zod";
+import { DEFAULT_ANSWERS, USE_AREAS, PROHIBITED_PRACTICES, type SystemAnswers } from "@shared/ai-act-rules";
 import { parse } from "csv-parse";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -271,6 +274,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Template downloads
+  // ---- AI Use & Governance Report ----
+  const governanceReportSchema = z.object({
+    company: z.record(z.any()),
+    controls: z.record(z.any()),
+    systems: z.array(z.record(z.any())).max(100),
+  });
+
+  app.get("/api/governance-report", authenticateToken, async (req: any, res) => {
+    try {
+      const report = await storage.getGovernanceReport(req.user.userId);
+      res.json(report ?? null);
+    } catch (error) {
+      console.error("Get governance report error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.put("/api/governance-report", authenticateToken, async (req: any, res) => {
+    try {
+      const data = governanceReportSchema.parse(req.body);
+      if (JSON.stringify(data).length > 500_000) {
+        return res.status(413).json({ message: "Report is too large" });
+      }
+      const report = await storage.saveGovernanceReport(req.user.userId, data);
+      res.json(report);
+    } catch (error) {
+      console.error("Save governance report error:", error);
+      res.status(400).json({ message: "Invalid report data" });
+    }
+  });
+
+  // Suggest questionnaire answers from a plain-English description.
+  // The classification itself stays rule-based; this only pre-fills answers for the user to confirm.
+  app.post("/api/governance-report/suggest", authenticateToken, async (req: any, res) => {
+    try {
+      const { name, supplier, description } = z
+        .object({
+          name: z.string().max(200).default(""),
+          supplier: z.string().max(200).default(""),
+          description: z.string().min(5).max(3000),
+        })
+        .parse(req.body);
+
+      const prompt = `You help small companies fill in an EU AI Act questionnaire for one AI system they use or build.
+
+System name: ${name}
+Supplier: ${supplier}
+Description from the user: """${description}"""
+
+Return ONLY a JSON object with these keys:
+- "role": "deployer" if the company uses a system someone else built, "provider" if the company built it and offers it under its own name.
+- "useArea": one of ${USE_AREAS.map((u) => `"${u.value}"`).join(", ")}. Use "none" unless the description clearly matches one of the sensitive areas (${USE_AREAS.filter((u) => u.value !== "none").map((u) => `${u.value}: ${u.label}`).join("; ")}).
+- "narrowTaskOnly": true only if it performs a narrow procedural or preparatory task and does not materially influence decisions about people.
+- "profilesPeople": true if it evaluates or predicts things about individual people (performance, reliability, behaviour, preferences).
+- "interactsWithPeople": true if people chat or talk with it directly (chatbot, voice agent).
+- "generatesContent": true if it generates text, images, audio or video.
+- "createsDeepfakes": true if it produces realistic images, audio or video of real people, places or events.
+- "publishesPublicInterestText": true if AI-written text is published to inform the public without a person editing it.
+- "emotionOrBiometricCategorisation": true if it detects emotions or categorises people from biometric data.
+- "isGeneralPurposeModel": true only if the company itself trains and supplies a general-purpose AI model.
+- "prohibited": an array (usually empty) using only these values: ${PROHIBITED_PRACTICES.map((p) => `"${p.value}"`).join(", ")}.
+- "rationale": one or two plain sentences explaining the main choices.
+
+Be conservative: when unsure, choose false and "none".`;
+
+      const raw = await askClaude(prompt, { maxTokens: 800, temperature: 0 });
+      const parsed = JSON.parse(extractJson(raw));
+
+      const areas = new Set(USE_AREAS.map((u) => u.value));
+      const banned = new Set(PROHIBITED_PRACTICES.map((p) => p.value));
+      const bool = (v: unknown) => v === true;
+      const answers: SystemAnswers = {
+        ...DEFAULT_ANSWERS,
+        role: parsed.role === "provider" ? "provider" : "deployer",
+        useArea: areas.has(parsed.useArea) ? parsed.useArea : "none",
+        narrowTaskOnly: bool(parsed.narrowTaskOnly),
+        profilesPeople: bool(parsed.profilesPeople),
+        interactsWithPeople: bool(parsed.interactsWithPeople),
+        generatesContent: bool(parsed.generatesContent),
+        createsDeepfakes: bool(parsed.createsDeepfakes),
+        publishesPublicInterestText: bool(parsed.publishesPublicInterestText),
+        emotionOrBiometricCategorisation: bool(parsed.emotionOrBiometricCategorisation),
+        isGeneralPurposeModel: bool(parsed.isGeneralPurposeModel),
+        prohibited: Array.isArray(parsed.prohibited) ? parsed.prohibited.filter((p: string) => banned.has(p as any)) : [],
+      };
+      res.json({ answers, rationale: typeof parsed.rationale === "string" ? parsed.rationale : "" });
+    } catch (error: any) {
+      console.error("Governance suggest error:", error?.message || error);
+      res.status(502).json({ message: "Could not get a suggestion right now. Please answer the questions manually." });
+    }
+  });
+
   app.post("/api/template-downloads", authenticateToken, async (req: any, res) => {
     try {
       const downloadData = insertTemplateDownloadSchema.parse({

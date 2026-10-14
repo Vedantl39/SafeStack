@@ -65,6 +65,17 @@ export const complianceRoadmaps = pgTable("compliance_roadmaps", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const governanceReports = pgTable("governance_reports", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id).unique(),
+  company: jsonb("company").notNull(),
+  controls: jsonb("controls").notNull(),
+  systems: jsonb("systems").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type GovernanceReport = typeof governanceReports.$inferSelect;
+
 export const templateDownloads = pgTable("template_downloads", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),

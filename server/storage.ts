@@ -6,6 +6,8 @@ import {
   biasChecklists,
   explainabilityPlans,
   complianceRoadmaps,
+  governanceReports,
+  type GovernanceReport,
   templateDownloads,
   aiModelClassifications,
   documentAnalyses,
@@ -75,6 +77,8 @@ export interface IStorage {
   // Compliance roadmaps
   upsertComplianceRoadmap(roadmap: InsertComplianceRoadmap): Promise<ComplianceRoadmap>;
   getComplianceRoadmapByUserId(userId: number): Promise<ComplianceRoadmap | undefined>;
+  getGovernanceReport(userId: number): Promise<GovernanceReport | undefined>;
+  saveGovernanceReport(userId: number, data: { company: unknown; controls: unknown; systems: unknown }): Promise<GovernanceReport>;
   
   // Template downloads
   createTemplateDownload(download: InsertTemplateDownload): Promise<TemplateDownload>;
@@ -290,6 +294,29 @@ export class DatabaseStorage implements IStorage {
       .from(complianceRoadmaps)
       .where(eq(complianceRoadmaps.userId, userId));
     return result || undefined;
+  }
+
+  async getGovernanceReport(userId: number): Promise<GovernanceReport | undefined> {
+    const [result] = await db
+      .select()
+      .from(governanceReports)
+      .where(eq(governanceReports.userId, userId));
+    return result || undefined;
+  }
+
+  async saveGovernanceReport(
+    userId: number,
+    data: { company: unknown; controls: unknown; systems: unknown },
+  ): Promise<GovernanceReport> {
+    const [result] = await db
+      .insert(governanceReports)
+      .values({ userId, ...data })
+      .onConflictDoUpdate({
+        target: governanceReports.userId,
+        set: { ...data, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
   }
 
   async createTemplateDownload(download: InsertTemplateDownload): Promise<TemplateDownload> {
