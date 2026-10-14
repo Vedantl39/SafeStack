@@ -320,6 +320,7 @@ export interface CompanyProfile {
   aiOwner: string;
   preparedBy: string;
   reportDate: string; // yyyy-mm-dd
+  approvedTools: string;
 }
 
 export const DEFAULT_COMPANY: CompanyProfile = {
@@ -330,6 +331,7 @@ export const DEFAULT_COMPANY: CompanyProfile = {
   aiOwner: "",
   preparedBy: "",
   reportDate: "",
+  approvedTools: "",
 };
 
 export interface ReportSystem {

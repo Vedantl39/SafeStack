@@ -27,6 +27,7 @@ import { classifyAiModel, detectRisksFromText } from "./ai-model-classifier";
 import { askClaude, extractJson } from "./claude";
 import { z } from "zod";
 import { DEFAULT_ANSWERS, USE_AREAS, PROHIBITED_PRACTICES, type SystemAnswers } from "@shared/ai-act-rules";
+import { scoreQuiz, TRAINING_VERSION } from "@shared/ai-training";
 import { parse } from "csv-parse";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
@@ -283,8 +284,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/governance-report", authenticateToken, async (req: any, res) => {
     try {
+      const trainingCode = await storage.ensureTrainingCode(req.user.userId);
       const report = await storage.getGovernanceReport(req.user.userId);
-      res.json(report ?? null);
+      const completions = await storage.getTrainingCompletions(req.user.userId);
+      res.json({ ...(report ?? {}), trainingCode, completions });
     } catch (error) {
       console.error("Get governance report error:", error);
       res.status(500).json({ message: "Server error" });
@@ -302,6 +305,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Save governance report error:", error);
       res.status(400).json({ message: "Invalid report data" });
+    }
+  });
+
+  // Public team training (no login): staff open the link shared by the AI owner.
+  app.get("/api/training/:code", async (req, res) => {
+    try {
+      const report = await storage.getReportByTrainingCode(String(req.params.code).slice(0, 32));
+      if (!report) return res.status(404).json({ message: "Training link not found" });
+      const company = (report.company ?? {}) as Record<string, string>;
+      res.json({ companyName: company.name || "", aiOwner: company.aiOwner || "", approvedTools: company.approvedTools || "" });
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.post("/api/training/:code/complete", async (req, res) => {
+    try {
+      const report = await storage.getReportByTrainingCode(String(req.params.code).slice(0, 32));
+      if (!report) return res.status(404).json({ message: "Training link not found" });
+      const body = z
+        .object({
+          name: z.string().trim().min(2).max(100),
+          role: z.string().trim().max(100).default(""),
+          answers: z.record(z.number().int().min(0).max(10)),
+        })
+        .parse(req.body);
+      const result = scoreQuiz(body.answers);
+      if (result.passed) {
+        await storage.addTrainingCompletion({
+          ownerUserId: report.userId,
+          name: body.name,
+          role: body.role,
+          score: result.correct,
+          total: result.total,
+          version: TRAINING_VERSION,
+        });
+      }
+      res.json(result);
+    } catch (error) {
+      res.status(400).json({ message: "Please enter your name and answer every question." });
     }
   });
 

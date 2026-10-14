@@ -153,3 +153,12 @@
     color: hsl(var(--warning-foreground));
   }
 }
+
+@media print {
+  @page { size: A4; margin: 16mm 14mm; }
+  html, body { background: #fff !important; }
+  .report { color: #0f172a; font-size: 10.5pt; }
+  .report table { page-break-inside: auto; }
+  .report tr { page-break-inside: avoid; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

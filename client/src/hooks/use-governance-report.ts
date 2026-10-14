@@ -14,6 +14,18 @@ export interface ReportData {
   controls: CompanyControls;
   systems: ReportSystem[];
   updatedAt?: string;
+  trainingCode?: string;
+  completions: TrainingCompletion[];
+}
+
+export interface TrainingCompletion {
+  id: number;
+  name: string;
+  role: string;
+  score: number;
+  total: number;
+  version: string;
+  completedAt: string;
 }
 
 export function normaliseReport(raw: any): ReportData {
@@ -28,6 +40,8 @@ export function normaliseReport(raw: any): ReportData {
         }))
       : [],
     updatedAt: raw?.updatedAt,
+    trainingCode: raw?.trainingCode,
+    completions: Array.isArray(raw?.completions) ? raw.completions : [],
   };
 }
 
