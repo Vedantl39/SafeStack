@@ -1,10 +1,7 @@
-import OpenAI from 'openai';
+import { askClaude } from './claude';
 import fs from 'fs';
 import path from 'path';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 // Cache for processed PDF content
 let cachedPdfContent: string = '';
@@ -312,14 +309,7 @@ Provide a clear, conversational answer in plain English. Write in a natural, flo
 
     // Try OpenAI API with fallback handling
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 400,
-        temperature: 0.3,
-      });
-
-      let answer = response.choices[0].message.content || "Unable to generate response";
+      let answer = (await askClaude(prompt, { maxTokens: 400, temperature: 0.3 })) || "Unable to generate response";
       
       // Clean up markdown formatting and improve readability
       answer = answer

@@ -1,8 +1,5 @@
-import OpenAI from 'openai';
+import { askClaude, extractJson } from './claude';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export interface ClassificationResult {
   aiActStatus: 'Prohibited' | 'High-Risk' | 'Medium-Risk' | 'Low-Risk' | 'Unregulated';
@@ -47,18 +44,12 @@ Please respond in the following JSON format:
 `;
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0,
-    });
-
-    const content = response.choices[0].message.content;
+    const content = await askClaude(prompt, { temperature: 0 });
     if (!content) {
-      throw new Error('No response from OpenAI');
+      throw new Error('No response from Claude');
     }
 
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(extractJson(content));
     
     // Determine risk tier based on detected risks and AI Act status
     let riskTier: 'High' | 'Medium' | 'Low' = 'Low';

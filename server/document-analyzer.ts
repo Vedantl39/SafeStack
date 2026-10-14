@@ -1,13 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import mammoth from 'mammoth';
-import { OpenAI } from 'openai';
+import { askClaude } from './claude';
 import { db } from './db';
 import { documentAnalyses, insertDocumentAnalysisSchema } from '@shared/schema';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 interface RiskDetection {
   chunk: string;
@@ -40,13 +37,7 @@ Excerpt:
 
 Respond in the format: Risk Category: <one of the 5 labels> with a 1-line explanation.`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0
-    });
-
-    const content = response.choices[0].message.content?.trim() || "";
+    const content = await askClaude(prompt, { temperature: 0 });
     
     if (content.includes("Risk Category:")) {
       const parts = content.split("Risk Category:")[1];

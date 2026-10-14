@@ -560,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const classificationData = insertAiModelClassificationSchema.parse(req.body);
       
-      // Classify the AI model using OpenAI
+      // Classify the AI model using Claude
       const classification = await classifyAiModel(
         classificationData.purpose,
         classificationData.useCaseType,

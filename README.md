@@ -107,7 +107,7 @@ Facial Recognition System,Real-time facial recognition for building access contr
 
 ## Environment Variables
 
-- `OPENAI_API_KEY` - Your OpenAI API key for model classification
+- `ANTHROPIC_API_KEY` - Your Anthropic (Claude) API key for model classification
 
 ## Usage Tips
 
